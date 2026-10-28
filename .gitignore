@@ -6,3 +6,4 @@ __pycache__/
 
 # Local application data
 data/*.jsonl
+exports/

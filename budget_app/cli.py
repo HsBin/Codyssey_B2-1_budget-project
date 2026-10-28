@@ -3,7 +3,7 @@ import argparse
 
 from .repository import TransactionRepository, CategoryStore, BudgetRepository
 from .service import TransactionService, CategoryService, BudgetService
-
+from .exporter import export_transactions_csv
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -162,6 +162,18 @@ def main() -> None:
         "--month",
         required=True,
         help="조회할 월 (YYYY-MM)"
+    )
+
+
+    export_parser = subparsers.add_parser(
+        "export",
+        help="거래 내역을 CSV 파일로 내보내기"
+    )
+
+    export_parser.add_argument(
+        "--output",
+        required=True,
+        help="저장할 CSV 파일 경로"
     )
 
 
@@ -422,5 +434,23 @@ def main() -> None:
                         print("[경고] 예산을 초과했습니다.")
 
         except ValueError as error:
+            print(f"[오류] {error}")
+            raise SystemExit(1)
+
+
+    elif args.command == "export":
+        try:
+            if not args.output.lower().endswith(".csv"):
+                raise ValueError("출력 파일은 .csv 확장자여야 합니다.")
+
+            count = export_transactions_csv(
+                repository,
+                args.output
+            )
+
+            print(f"[내보내기 완료] {count}건")
+            print(f"저장 경로: {args.output}")
+
+        except (ValueError, OSError) as error:
             print(f"[오류] {error}")
             raise SystemExit(1)
