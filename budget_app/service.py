@@ -6,6 +6,7 @@ from datetime import datetime
 from .models import Transaction
 from .repository import TransactionRepository, CategoryStore, BudgetRepository
 from dataclasses import replace
+from .decorators import measure_time
 
 class TransactionService:
     def __init__(
@@ -140,7 +141,8 @@ class TransactionService:
     def delete_transaction(self, transaction_id: str) -> None:
         if not self.repository.delete(transaction_id):
             raise ValueError("해당 ID의 거래가 존재하지 않습니다.")
-
+        
+    @measure_time
     def search_transactions(
         self,
         category: str | None = None,
@@ -218,6 +220,7 @@ class TransactionService:
         return results
 
 
+    @measure_time
     def get_monthly_summary(self, month: str) -> dict:
         try:
             parsed_month = datetime.strptime(month, "%Y-%m")
