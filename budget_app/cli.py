@@ -59,6 +59,27 @@ def main() -> None:
     )
 
 
+    update_parser = subparsers.add_parser(
+        "update",
+        help="거래 내역 수정"
+    )
+    update_parser.add_argument(
+        "--id",
+        required=True,
+        help="수정할 거래 ID"
+    )
+
+    delete_parser = subparsers.add_parser(
+        "delete",
+        help="거래 내역 삭제"
+    )
+    delete_parser.add_argument(
+        "--id",
+        required=True,
+        help="삭제할 거래 ID"
+    )
+
+
     args = parser.parse_args()
 
     repository = TransactionRepository()
@@ -140,6 +161,80 @@ def main() -> None:
                 name = input("삭제할 카테고리명: ")
                 category_service.remove_category(name)
                 print(f"[삭제 완료] category={name.strip()}")
+
+        except ValueError as error:
+            print(f"[오류] {error}")
+            raise SystemExit(1)
+
+
+    elif args.command == "update":
+        try:
+            existing = repository.get_by_id(args.id)
+
+            if existing is None:
+                raise ValueError("해당 ID의 거래가 존재하지 않습니다.")
+
+            print(f"수정할 거래: {existing.id}")
+            print("기존 값을 유지하려면 Enter를 누르세요.")
+
+            date = input(f"날짜 [{existing.date}]: ").strip()
+            transaction_type = input(
+                f"타입 [{existing.type}]: "
+            ).strip()
+            category = input(
+                f"카테고리 [{existing.category}]: "
+            ).strip()
+            amount_input = input(
+                f"금액 [{existing.amount}]: "
+            ).strip()
+            memo = input(
+                f"메모 [{existing.memo}]: "
+            )
+            tags_input = input(
+                f"태그 [{','.join(existing.tags)}]: "
+            ).strip()
+
+            updated = service.update_transaction(
+                transaction_id=existing.id,
+                date=date or existing.date,
+                transaction_type=transaction_type or existing.type,
+                category=category or existing.category,
+                amount=int(amount_input) if amount_input else existing.amount,
+                memo=memo if memo else existing.memo,
+                tags=(
+                    [tag.strip() for tag in tags_input.split(",") if tag.strip()]
+                    if tags_input else existing.tags
+                )
+            )
+
+            print(f"[수정 완료] id={updated.id}")
+
+        except ValueError as error:
+            print(f"[오류] {error}")
+            raise SystemExit(1)
+
+
+    elif args.command == "delete":
+        try:
+            existing = repository.get_by_id(args.id)
+
+            if existing is None:
+                raise ValueError("해당 ID의 거래가 존재하지 않습니다.")
+
+            print(
+                f"삭제할 거래: {existing.date} | "
+                f"{existing.category} | {existing.amount}원 | "
+                f"{existing.memo}"
+            )
+
+            confirm = input("정말 삭제하시겠습니까? (y/N): ").strip().lower()
+
+            if confirm != "y":
+                print("삭제가 취소되었습니다.")
+                return
+
+            service.delete_transaction(existing.id)
+            print(f"[삭제 완료] id={existing.id}")
 
         except ValueError as error:
             print(f"[오류] {error}")

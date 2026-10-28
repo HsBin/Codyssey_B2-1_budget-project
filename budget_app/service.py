@@ -5,7 +5,7 @@ from datetime import datetime
 
 from .models import Transaction
 from .repository import TransactionRepository, CategoryStore
-
+from dataclasses import replace
 
 class TransactionService:
     def __init__(
@@ -88,6 +88,58 @@ class TransactionService:
         )
 
         return [item[2] for item in latest]
+
+    def update_transaction(
+        self,
+        transaction_id: str,
+        date: str,
+        transaction_type: str,
+        category: str,
+        amount: int,
+        memo: str,
+        tags: list[str]
+    ) -> Transaction:
+        existing = self.repository.get_by_id(transaction_id)
+
+        if existing is None:
+            raise ValueError("해당 ID의 거래가 존재하지 않습니다.")
+
+        try:
+            parsed_date = datetime.strptime(date, "%Y-%m-%d")
+            if parsed_date.strftime("%Y-%m-%d") != date:
+                raise ValueError
+        except ValueError:
+            raise ValueError("날짜 형식이 올바르지 않습니다. 예: 2026-10-28")
+
+        if transaction_type not in ("income", "expense"):
+            raise ValueError("거래 타입은 income 또는 expense여야 합니다.")
+
+        if not isinstance(amount, int) or isinstance(amount, bool) or amount <= 0:
+            raise ValueError("금액은 0보다 큰 정수여야 합니다.")
+
+        category = category.strip()
+
+        if category not in self.category_store.get_all():
+            raise ValueError("등록되지 않은 카테고리입니다.")
+
+        updated = replace(
+            existing,
+            date=date,
+            type=transaction_type,
+            category=category,
+            amount=amount,
+            memo=memo,
+            tags=tags
+        )
+
+        if not self.repository.update(updated):
+            raise ValueError("거래 수정에 실패했습니다.")
+
+        return updated
+
+    def delete_transaction(self, transaction_id: str) -> None:
+        if not self.repository.delete(transaction_id):
+            raise ValueError("해당 ID의 거래가 존재하지 않습니다.")
 
 
 class CategoryService:

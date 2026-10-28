@@ -40,6 +40,85 @@ class TransactionRepository:
         return f"TX-{uuid.uuid4().hex}"
 
 
+    def get_by_id(self, transaction_id: str) -> Transaction | None:
+        for transaction in self.get_all():
+            if transaction.id == transaction_id:
+                return transaction
+
+        return None
+
+
+    def update(self, updated_transaction: Transaction) -> bool:
+        temp_path = None
+        found = False
+
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=self.data_dir,
+                delete=False
+            ) as temp_file:
+                temp_path = Path(temp_file.name)
+
+                for transaction in self.get_all():
+                    if transaction.id == updated_transaction.id:
+                        transaction = updated_transaction
+                        found = True
+
+                    json.dump(
+                        asdict(transaction),
+                        temp_file,
+                        ensure_ascii=False
+                    )
+                    temp_file.write("\n")
+
+            if found:
+                os.replace(temp_path, self.file_path)
+
+            return found
+
+        finally:
+            if temp_path is not None:
+                temp_path.unlink(missing_ok=True)
+
+
+    def delete(self, transaction_id: str) -> bool:
+        temp_path = None
+        found = False
+
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=self.data_dir,
+                delete=False
+            ) as temp_file:
+                temp_path = Path(temp_file.name)
+
+                for transaction in self.get_all():
+                    if transaction.id == transaction_id:
+                        found = True
+                        continue
+
+                    json.dump(
+                        asdict(transaction),
+                        temp_file,
+                        ensure_ascii=False
+                    )
+                    temp_file.write("\n")
+
+            if found:
+                os.replace(temp_path, self.file_path)
+
+            return found
+
+        finally:
+            if temp_path is not None:
+                temp_path.unlink(missing_ok=True)
+
+
+
 class CategoryStore:
     def __init__(self, data_dir: str = "./data") -> None:
         self.data_dir = Path(data_dir)
