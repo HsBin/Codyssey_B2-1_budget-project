@@ -1,3 +1,0 @@
-{"id": "TX-000001", "type": "expense", "date": "2026-10-28", "amount": 15000, "category": "food", "memo": "점심", "tags": ["meal"]}
-{"id": "TX-70e739f0396b4fcb93bd1dcc1b62cce6", "type": "expense", "date": "2026-10-28", "amount": 12000, "category": "food", "memo": "저녁", "tags": ["dinner"]}
-{"id": "TX-bf981f8b99c0417595362ce839bfa121", "type": "expense", "date": "2026-10-28", "amount": 8500, "category": "food", "memo": "커피", "tags": ["cafe", "drink"]}
