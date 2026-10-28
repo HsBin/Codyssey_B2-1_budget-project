@@ -126,6 +126,18 @@ def main() -> None:
     )
 
 
+    summary_parser = subparsers.add_parser(
+        "summary",
+        help="월별 수입·지출 통계 조회"
+    )
+
+    summary_parser.add_argument(
+        "--month",
+        required=True,
+        help="조회할 월 (YYYY-MM)"
+    )
+
+
     args = parser.parse_args()
 
     repository = TransactionRepository()
@@ -311,6 +323,32 @@ def main() -> None:
                     f"{transaction.type} | {transaction.category} | "
                     f"{transaction.amount}원 | {transaction.memo}"
                 )
+
+        except ValueError as error:
+            print(f"[오류] {error}")
+            raise SystemExit(1)
+
+
+    elif args.command == "summary":
+        try:
+            summary = service.get_monthly_summary(args.month)
+
+            print(f"\n===== {summary['month']} 월별 통계 =====")
+            print(f"총수입: {summary['income']:,}원")
+            print(f"총지출: {summary['expense']:,}원")
+            print(f"잔액: {summary['balance']:,}원")
+
+            print("\n[카테고리별 지출]")
+
+            if not summary["category_expenses"]:
+                print("지출 내역이 없습니다.")
+            else:
+                for category, amount in sorted(
+                    summary["category_expenses"].items(),
+                    key=lambda item: item[1],
+                    reverse=True
+                ):
+                    print(f"- {category}: {amount:,}원")
 
         except ValueError as error:
             print(f"[오류] {error}")

@@ -218,6 +218,45 @@ class TransactionService:
         return results
 
 
+    def get_monthly_summary(self, month: str) -> dict:
+        try:
+            parsed_month = datetime.strptime(month, "%Y-%m")
+            if parsed_month.strftime("%Y-%m") != month:
+                raise ValueError
+        except ValueError:
+            raise ValueError(
+                "월 형식이 올바르지 않습니다. 예: 2026-10"
+            )
+
+        total_income = 0
+        total_expense = 0
+        category_expenses: dict[str, int] = {}
+
+        for transaction in self.repository.get_all():
+            if transaction.date[:7] != month:
+                continue
+
+            if transaction.type == "income":
+                total_income += transaction.amount
+
+            elif transaction.type == "expense":
+                total_expense += transaction.amount
+
+                category_expenses[transaction.category] = (
+                    category_expenses.get(transaction.category, 0)
+                    + transaction.amount
+                )
+
+        return {
+            "month": month,
+            "income": total_income,
+            "expense": total_expense,
+            "balance": total_income - total_expense,
+            "category_expenses": category_expenses
+        }
+
+
+
 class CategoryService:
     def __init__(
         self,
