@@ -91,8 +91,7 @@ def import_transactions_csv(
                     f"{row_number}행: {error}"
                 ) from error
 
-    for transaction in imported_transactions:
-        repository.add(transaction)
+    repository.add_many(imported_transactions)
 
     return {
         "imported": len(imported_transactions),

@@ -3,6 +3,7 @@ import json
 import uuid
 import os
 import tempfile
+import shutil
 
 from dataclasses import asdict
 from pathlib import Path
@@ -27,6 +28,53 @@ class TransactionRepository:
                 ensure_ascii=False
             )
             file.write("\n")
+
+
+    def add_many(self, transactions: list[Transaction]) -> None:
+        if not transactions:
+            return
+
+        temp_path = None
+
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w+b",
+                dir=self.data_dir,
+                delete=False
+            ) as temp_file:
+                temp_path = Path(temp_file.name)
+
+                # 기존 JSONL 데이터를 임시 파일로 복사
+                with self.file_path.open("rb") as source:
+                    shutil.copyfileobj(source, temp_file)
+
+                # 기존 파일의 마지막 줄에 개행이 없으면 추가
+                if temp_file.tell() > 0:
+                    temp_file.seek(-1, os.SEEK_END)
+                    last_byte = temp_file.read(1) if temp_file.readable() else None
+                    temp_file.seek(0, os.SEEK_END)
+
+                    if last_byte != b"\n":
+                        temp_file.write(b"\n")
+
+                # 신규 거래를 임시 파일에 기록
+                for transaction in transactions:
+                    line = json.dumps(
+                        asdict(transaction),
+                        ensure_ascii=False
+                    )
+                    temp_file.write((line + "\n").encode("utf-8"))
+
+                temp_file.flush()
+                os.fsync(temp_file.fileno())
+
+            # 모든 기록이 성공한 경우에만 원본 교체
+            os.replace(temp_path, self.file_path)
+
+        finally:
+            if temp_path is not None:
+                temp_path.unlink(missing_ok=True)
+
 
     def get_all(self) -> Iterator[Transaction]:
         with self.file_path.open("r", encoding="utf-8") as file:
