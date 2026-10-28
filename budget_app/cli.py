@@ -1,8 +1,8 @@
 
 import argparse
 
-from .repository import TransactionRepository, CategoryStore
-from .service import TransactionService, CategoryService
+from .repository import TransactionRepository, CategoryStore, BudgetRepository
+from .service import TransactionService, CategoryService, BudgetService
 
 
 def main() -> None:
@@ -138,12 +138,41 @@ def main() -> None:
     )
 
 
+    budget_parser = subparsers.add_parser(
+        "budget",
+        help="월별 예산 관리"
+    )
+
+    budget_subparsers = budget_parser.add_subparsers(
+        dest="budget_command",
+        required=True
+    )
+
+    budget_subparsers.add_parser(
+        "set",
+        help="월별 카테고리 예산 설정"
+    )
+
+    budget_list_parser = budget_subparsers.add_parser(
+        "list",
+        help="월별 예산 및 사용 현황 조회"
+    )
+
+    budget_list_parser.add_argument(
+        "--month",
+        required=True,
+        help="조회할 월 (YYYY-MM)"
+    )
+
+
     args = parser.parse_args()
 
     repository = TransactionRepository()
     category_store = CategoryStore()
     service = TransactionService(repository, category_store)
     category_service = CategoryService(category_store, repository)
+    budget_repository = BudgetRepository()
+    budget_service = BudgetService(budget_repository, category_store, repository)
 
     if args.command == "add":
         try:
@@ -349,6 +378,48 @@ def main() -> None:
                     reverse=True
                 ):
                     print(f"- {category}: {amount:,}원")
+
+        except ValueError as error:
+            print(f"[오류] {error}")
+            raise SystemExit(1)
+
+
+    elif args.command == "budget":
+        try:
+            if args.budget_command == "set":
+                month = input("월(YYYY-MM): ").strip()
+                category = input("카테고리: ").strip()
+                amount = int(input("예산 금액(양수): "))
+
+                budget_service.set_budget(
+                    month=month,
+                    category=category,
+                    amount=amount
+                )
+
+                print(
+                    f"[저장 완료] {month} | "
+                    f"{category} | {amount:,}원"
+                )
+
+            elif args.budget_command == "list":
+                results = budget_service.get_budget_status(args.month)
+
+                if not results:
+                    print("설정된 예산이 없습니다.")
+                    return
+
+                print(f"\n===== {args.month} 예산 현황 =====")
+
+                for item in results:
+                    print(f"\n[{item['category']}]")
+                    print(f"예산: {item['budget']:,}원")
+                    print(f"사용: {item['spent']:,}원")
+                    print(f"잔액: {item['remaining']:,}원")
+                    print(f"사용률: {item['usage_rate']:.1f}%")
+
+                    if item["remaining"] < 0:
+                        print("[경고] 예산을 초과했습니다.")
 
         except ValueError as error:
             print(f"[오류] {error}")

@@ -174,3 +174,73 @@ class CategoryStore:
         finally:
             if temp_path is not None:
                 temp_path.unlink(missing_ok=True)
+
+
+class BudgetRepository:
+    def __init__(self, data_dir: str = "./data") -> None:
+        self.data_dir = Path(data_dir)
+        self.file_path = self.data_dir / "budgets.jsonl"
+
+        self.data_dir.mkdir(parents=True, exist_ok=True)
+        self.file_path.touch(exist_ok=True)
+
+    def get_all(self) -> list[dict]:
+        budgets = []
+
+        with self.file_path.open("r", encoding="utf-8") as file:
+            for line in file:
+                if line.strip():
+                    budgets.append(json.loads(line))
+
+        return budgets
+
+    def set_budget(
+        self,
+        month: str,
+        category: str,
+        amount: int
+    ) -> None:
+        budgets = self.get_all()
+
+        updated = False
+
+        for budget in budgets:
+            if (
+                budget["month"] == month
+                and budget["category"] == category
+            ):
+                budget["amount"] = amount
+                updated = True
+                break
+
+        if not updated:
+            budgets.append({
+                "month": month,
+                "category": category,
+                "amount": amount
+            })
+
+        temp_path = None
+
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=self.data_dir,
+                delete=False
+            ) as temp_file:
+                temp_path = Path(temp_file.name)
+
+                for budget in budgets:
+                    json.dump(
+                        budget,
+                        temp_file,
+                        ensure_ascii=False
+                    )
+                    temp_file.write("\n")
+
+            os.replace(temp_path, self.file_path)
+
+        finally:
+            if temp_path is not None:
+                temp_path.unlink(missing_ok=True)

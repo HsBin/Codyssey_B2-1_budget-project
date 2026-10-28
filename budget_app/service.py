@@ -4,7 +4,7 @@ from itertools import count
 from datetime import datetime
 
 from .models import Transaction
-from .repository import TransactionRepository, CategoryStore
+from .repository import TransactionRepository, CategoryStore, BudgetRepository
 from dataclasses import replace
 
 class TransactionService:
@@ -293,3 +293,87 @@ class CategoryService:
                 )
 
         self.category_store.remove(name)
+
+
+class BudgetService:
+    def __init__(
+        self,
+        budget_repository: BudgetRepository,
+        category_store: CategoryStore,
+        transaction_repository: TransactionRepository
+    ) -> None:
+        self.budget_repository = budget_repository
+        self.category_store = category_store
+        self.transaction_repository = transaction_repository
+
+    def set_budget(
+        self,
+        month: str,
+        category: str,
+        amount: int
+    ) -> None:
+        try:
+            parsed_month = datetime.strptime(month, "%Y-%m")
+            if parsed_month.strftime("%Y-%m") != month:
+                raise ValueError
+        except ValueError:
+            raise ValueError(
+                "월 형식이 올바르지 않습니다. 예: 2026-10"
+            )
+
+        category = category.strip()
+
+        if category not in self.category_store.get_all():
+            raise ValueError("등록되지 않은 카테고리입니다.")
+
+        if not isinstance(amount, int) or isinstance(amount, bool) or amount <= 0:
+            raise ValueError("예산은 0보다 큰 정수여야 합니다.")
+
+        self.budget_repository.set_budget(month, category, amount)
+
+    def get_budget_status(self, month: str) -> list[dict]:
+        try:
+            parsed_month = datetime.strptime(month, "%Y-%m")
+            if parsed_month.strftime("%Y-%m") != month:
+                raise ValueError
+        except ValueError:
+            raise ValueError(
+                "월 형식이 올바르지 않습니다. 예: 2026-10"
+            )
+
+        budgets = [
+            budget
+            for budget in self.budget_repository.get_all()
+            if budget["month"] == month
+        ]
+
+        expenses: dict[str, int] = {}
+
+        for transaction in self.transaction_repository.get_all():
+            if transaction.date[:7] != month:
+                continue
+
+            if transaction.type != "expense":
+                continue
+
+            expenses[transaction.category] = (
+                expenses.get(transaction.category, 0)
+                + transaction.amount
+            )
+
+        results = []
+
+        for budget in budgets:
+            category = budget["category"]
+            budget_amount = budget["amount"]
+            spent = expenses.get(category, 0)
+
+            results.append({
+                "category": category,
+                "budget": budget_amount,
+                "spent": spent,
+                "remaining": budget_amount - spent,
+                "usage_rate": spent / budget_amount * 100
+            })
+
+        return results
