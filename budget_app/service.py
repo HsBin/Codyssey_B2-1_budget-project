@@ -141,6 +141,82 @@ class TransactionService:
         if not self.repository.delete(transaction_id):
             raise ValueError("해당 ID의 거래가 존재하지 않습니다.")
 
+    def search_transactions(
+        self,
+        category: str | None = None,
+        transaction_type: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        min_amount: int | None = None,
+        max_amount: int | None = None,
+        keyword: str | None = None
+    ) -> list[Transaction]:
+
+        def validate_date(value: str) -> None:
+            try:
+                parsed = datetime.strptime(value, "%Y-%m-%d")
+                if parsed.strftime("%Y-%m-%d") != value:
+                    raise ValueError
+            except ValueError:
+                raise ValueError(
+                    f"날짜 형식이 올바르지 않습니다: {value}"
+                )
+
+        if date_from is not None:
+            validate_date(date_from)
+
+        if date_to is not None:
+            validate_date(date_to)
+
+        if date_from and date_to and date_from > date_to:
+            raise ValueError("시작 날짜는 종료 날짜보다 늦을 수 없습니다.")
+
+        if transaction_type is not None:
+            if transaction_type not in ("income", "expense"):
+                raise ValueError("타입은 income 또는 expense여야 합니다.")
+
+        if min_amount is not None and min_amount < 0:
+            raise ValueError("최소 금액은 0 이상이어야 합니다.")
+
+        if max_amount is not None and max_amount < 0:
+            raise ValueError("최대 금액은 0 이상이어야 합니다.")
+
+        if (
+            min_amount is not None
+            and max_amount is not None
+            and min_amount > max_amount
+        ):
+            raise ValueError("최소 금액은 최대 금액보다 클 수 없습니다.")
+
+        results = []
+
+        for transaction in self.repository.get_all():
+            if category is not None and transaction.category != category:
+                continue
+
+            if transaction_type is not None and transaction.type != transaction_type:
+                continue
+
+            if date_from is not None and transaction.date < date_from:
+                continue
+
+            if date_to is not None and transaction.date > date_to:
+                continue
+
+            if min_amount is not None and transaction.amount < min_amount:
+                continue
+
+            if max_amount is not None and transaction.amount > max_amount:
+                continue
+
+            if keyword is not None:
+                if keyword.lower() not in transaction.memo.lower():
+                    continue
+
+            results.append(transaction)
+
+        return results
+
 
 class CategoryService:
     def __init__(

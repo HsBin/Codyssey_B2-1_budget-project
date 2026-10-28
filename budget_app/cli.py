@@ -80,6 +80,52 @@ def main() -> None:
     )
 
 
+    search_parser = subparsers.add_parser(
+        "search",
+        help="조건에 맞는 거래 내역 검색"
+    )
+
+    search_parser.add_argument(
+        "--category",
+        help="카테고리 필터"
+    )
+
+    search_parser.add_argument(
+        "--type",
+        choices=["income", "expense"],
+        help="거래 타입 필터"
+    )
+
+    search_parser.add_argument(
+        "--from",
+        dest="date_from",
+        help="검색 시작 날짜 (YYYY-MM-DD)"
+    )
+
+    search_parser.add_argument(
+        "--to",
+        dest="date_to",
+        help="검색 종료 날짜 (YYYY-MM-DD)"
+    )
+
+    search_parser.add_argument(
+        "--min-amount",
+        type=int,
+        help="최소 금액"
+    )
+
+    search_parser.add_argument(
+        "--max-amount",
+        type=int,
+        help="최대 금액"
+    )
+
+    search_parser.add_argument(
+        "--keyword",
+        help="메모 검색어"
+    )
+
+
     args = parser.parse_args()
 
     repository = TransactionRepository()
@@ -235,6 +281,36 @@ def main() -> None:
 
             service.delete_transaction(existing.id)
             print(f"[삭제 완료] id={existing.id}")
+
+        except ValueError as error:
+            print(f"[오류] {error}")
+            raise SystemExit(1)
+
+
+    elif args.command == "search":
+        try:
+            transactions = service.search_transactions(
+                category=args.category,
+                transaction_type=args.type,
+                date_from=args.date_from,
+                date_to=args.date_to,
+                min_amount=args.min_amount,
+                max_amount=args.max_amount,
+                keyword=args.keyword
+            )
+
+            if not transactions:
+                print("검색 조건에 맞는 거래 내역이 없습니다.")
+                return
+
+            print(f"검색 결과: {len(transactions)}건")
+
+            for transaction in transactions:
+                print(
+                    f"{transaction.id} | {transaction.date} | "
+                    f"{transaction.type} | {transaction.category} | "
+                    f"{transaction.amount}원 | {transaction.memo}"
+                )
 
         except ValueError as error:
             print(f"[오류] {error}")
