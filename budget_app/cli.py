@@ -1,9 +1,11 @@
 
 import argparse
+import csv
 
 from .repository import TransactionRepository, CategoryStore, BudgetRepository
 from .service import TransactionService, CategoryService, BudgetService
 from .exporter import export_transactions_csv
+from .importer import import_transactions_csv
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -174,6 +176,17 @@ def main() -> None:
         "--output",
         required=True,
         help="저장할 CSV 파일 경로"
+    )
+
+    import_parser = subparsers.add_parser(
+        "import",
+        help="CSV 파일에서 거래 내역 가져오기"
+    )
+
+    import_parser.add_argument(
+        "--input",
+        required=True,
+        help="가져올 CSV 파일 경로"
     )
 
 
@@ -452,5 +465,25 @@ def main() -> None:
             print(f"저장 경로: {args.output}")
 
         except (ValueError, OSError) as error:
+            print(f"[오류] {error}")
+            raise SystemExit(1)
+
+
+    elif args.command == "import":
+        try:
+            if not args.input.lower().endswith(".csv"):
+                raise ValueError("입력 파일은 .csv 확장자여야 합니다.")
+
+            result = import_transactions_csv(
+                repository,
+                category_store,
+                args.input
+            )
+
+            print("[가져오기 완료]")
+            print(f"등록: {result['imported']}건")
+            print(f"중복 건너뛰기: {result['skipped']}건")
+
+        except (ValueError, OSError, csv.Error) as error:
             print(f"[오류] {error}")
             raise SystemExit(1)
