@@ -484,3 +484,42 @@ OK
 ## 11. 프로젝트 저장소
 
 GitHub: https://github.com/HsBin/Codyssey_B2-1_budget-project
+
+---
+
+## 📸 주요 기능 실행 결과
+
+### 1. 거래 추가 및 조회
+![거래 추가 및 조회](docs/screenshots/01_transaction.png)
+
+### 2. 거래 수정
+![거래 수정](docs/screenshots/02_update.png)
+
+### 3. 거래 삭제
+![거래 삭제](docs/screenshots/03_delete.png)
+
+### 4. 거래 검색
+![거래 검색](docs/screenshots/04_search.png)
+
+### 5. 월별 수입·지출 요약
+![월별 요약](docs/screenshots/05_summary.png)
+
+### 6. 카테고리 관리
+![카테고리 관리](docs/screenshots/06_category.png)
+
+### 7. 예산 설정 및 초과 경고
+![예산 관리](docs/screenshots/07_budget.png)
+
+### 8. CSV 내보내기
+![CSV 내보내기](docs/screenshots/08_csv_export.png)
+
+### 9. CSV 가져오기
+![CSV 가져오기](docs/screenshots/09_csv_import.png)
+
+### 10. 오류 처리 및 종료 코드
+![오류 처리](docs/screenshots/10_error.png)
+
+### 11. 자동화 테스트
+![자동화 테스트](docs/screenshots/11_tests.png)
+
+**테스트 결과:** 총 20개 테스트 통과 (20 passed, 0 failed)
